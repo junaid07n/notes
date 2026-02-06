@@ -784,9 +784,265 @@ def create_pdf(output_file):
     print(f"✓ PDF successfully created: {output_file}")
 
 
+def create_html(output_file):
+    """Generate a well-designed HTML website from the notes content"""
+
+    notes = create_comprehensive_notes()
+
+    def escape_html(text):
+        return (text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                .replace('"', '&quot;').replace("'", '&#x27;'))
+
+    # Build navigation items and section HTML
+    nav_items = []
+    sections_html = []
+
+    for idx, section in enumerate(notes['sections']):
+        section_id = f"section-{idx}"
+        nav_items.append(
+            f'<li><a href="#{section_id}">{escape_html(section["title"])}</a></li>'
+        )
+
+        subsections_html = []
+        for subsection in section['subsections']:
+            parts = []
+            if 'content' in subsection:
+                for para in subsection['content']:
+                    parts.append(f'<p>{escape_html(para)}</p>')
+            if 'list_items' in subsection:
+                items = ''.join(
+                    f'<li>{escape_html(item)}</li>' for item in subsection['list_items']
+                )
+                parts.append(f'<ul>{items}</ul>')
+            if 'content_after' in subsection:
+                for para in subsection['content_after']:
+                    parts.append(f'<p>{escape_html(para)}</p>')
+            if 'list_items_2' in subsection:
+                items = ''.join(
+                    f'<li>{escape_html(item)}</li>' for item in subsection['list_items_2']
+                )
+                parts.append(f'<ul>{items}</ul>')
+
+            subsections_html.append(
+                f'<div class="subsection">'
+                f'<h3>{escape_html(subsection["heading"])}</h3>'
+                f'{"".join(parts)}'
+                f'</div>'
+            )
+
+        sections_html.append(
+            f'<section id="{section_id}" class="section">'
+            f'<h2>{escape_html(section["title"])}</h2>'
+            f'{"".join(subsections_html)}'
+            f'</section>'
+        )
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{escape_html(notes['title'])}</title>
+<style>
+  :root {{
+    --primary: #1c4587;
+    --primary-light: #2c5f8d;
+    --accent: #e8f0f8;
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --text: #333333;
+    --text-light: #666666;
+    --border: #d0d7de;
+    --sidebar-width: 280px;
+  }}
+  *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  html {{ scroll-behavior: smooth; }}
+  body {{
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.7;
+  }}
+
+  /* Sidebar Navigation */
+  .sidebar {{
+    position: fixed;
+    top: 0; left: 0;
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: var(--primary);
+    color: #fff;
+    overflow-y: auto;
+    padding: 24px 0;
+    z-index: 100;
+  }}
+  .sidebar h2 {{
+    font-size: 16px;
+    padding: 0 20px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    margin-bottom: 8px;
+  }}
+  .sidebar ul {{ list-style: none; }}
+  .sidebar li a {{
+    display: block;
+    padding: 10px 20px;
+    color: rgba(255,255,255,0.85);
+    text-decoration: none;
+    font-size: 14px;
+    transition: background 0.2s, color 0.2s;
+  }}
+  .sidebar li a:hover,
+  .sidebar li a:focus {{
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+  }}
+
+  /* Main content */
+  .main {{
+    margin-left: var(--sidebar-width);
+    padding: 0 40px 60px;
+  }}
+
+  /* Hero */
+  .hero {{
+    text-align: center;
+    padding: 60px 20px 40px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: #fff;
+    margin: 0 -40px 40px;
+  }}
+  .hero h1 {{ font-size: 2.4rem; margin-bottom: 12px; }}
+  .hero p {{ font-size: 1.1rem; opacity: 0.9; }}
+  .hero .meta {{ margin-top: 18px; font-size: 0.9rem; opacity: 0.75; }}
+
+  /* Sections */
+  .section {{
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px 36px;
+    margin-bottom: 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }}
+  .section h2 {{
+    font-size: 1.5rem;
+    color: var(--primary);
+    border-bottom: 3px solid var(--accent);
+    padding-bottom: 10px;
+    margin-bottom: 24px;
+  }}
+  .subsection {{ margin-bottom: 24px; }}
+  .subsection h3 {{
+    font-size: 1.15rem;
+    color: var(--primary-light);
+    margin-bottom: 10px;
+  }}
+  .subsection p {{
+    margin-bottom: 10px;
+    text-align: justify;
+  }}
+  .subsection ul {{
+    padding-left: 24px;
+    margin-bottom: 12px;
+  }}
+  .subsection li {{
+    margin-bottom: 6px;
+  }}
+
+  /* Footer */
+  .footer {{
+    text-align: center;
+    padding: 32px 20px;
+    color: var(--text-light);
+    font-size: 0.9rem;
+  }}
+  .footer a {{ color: var(--primary); text-decoration: none; }}
+  .footer a:hover {{ text-decoration: underline; }}
+
+  /* Mobile toggle */
+  .menu-toggle {{
+    display: none;
+    position: fixed;
+    top: 12px; left: 12px;
+    z-index: 200;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 1.2rem;
+    cursor: pointer;
+  }}
+
+  /* Responsive */
+  @media (max-width: 768px) {{
+    .menu-toggle {{ display: block; }}
+    .sidebar {{
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+    }}
+    .sidebar.open {{ transform: translateX(0); }}
+    .main {{ margin-left: 0; padding: 0 16px 40px; }}
+    .hero {{ margin: 0 -16px 24px; padding: 48px 16px 32px; }}
+    .hero h1 {{ font-size: 1.8rem; }}
+    .section {{ padding: 20px; }}
+  }}
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation">&#9776;</button>
+
+<nav class="sidebar" id="sidebar">
+  <h2>&#128218; Table of Contents</h2>
+  <ul>
+    {''.join(nav_items)}
+  </ul>
+</nav>
+
+<div class="main">
+  <div class="hero">
+    <h1>{escape_html(notes['title'])}</h1>
+    <p>{escape_html(notes['subtitle'])}</p>
+    <div class="meta">Generated: {datetime.now().strftime('%B %d, %Y')} &bull; Based on Khan Academy Curriculum</div>
+  </div>
+
+  {''.join(sections_html)}
+
+  <div class="footer">
+    <p>End of Notes &mdash; For more information and interactive lessons, visit
+      <a href="https://www.khanacademy.org" target="_blank" rel="noopener">Khan Academy</a>
+    </p>
+  </div>
+</div>
+
+<script>
+  document.getElementById('menuToggle').addEventListener('click', function() {{
+    document.getElementById('sidebar').classList.toggle('open');
+  }});
+  document.addEventListener('keydown', function(e) {{
+    if (e.key === 'Escape') {{
+      document.getElementById('sidebar').classList.remove('open');
+    }}
+  }});
+  document.querySelectorAll('.sidebar a').forEach(function(link) {{
+    link.addEventListener('click', function() {{
+      document.getElementById('sidebar').classList.remove('open');
+    }});
+  }});
+</script>
+</body>
+</html>"""
+
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(html)
+    print(f"✓ HTML website successfully created: {output_file}")
+
+
 def main():
     """Main function"""
     output_file = "/mnt/user-data/outputs/khan_academy_computers_comprehensive_notes.pdf"
+    html_output_file = "/mnt/user-data/outputs/khan_academy_computers_comprehensive_notes.html"
     
     print("=" * 70)
     print("Khan Academy - Computers: Comprehensive Study Notes Generator")
@@ -794,13 +1050,14 @@ def main():
     print()
     
     create_pdf(output_file)
+    create_html(html_output_file)
     
     print()
     print("=" * 70)
     print("SUCCESS! Your comprehensive study notes are ready!")
     print("=" * 70)
     print()
-    print("The PDF includes detailed coverage of:")
+    print("The output includes detailed coverage of:")
     print("  • What is a Computer?")
     print("  • Digital Information & Binary")
     print("  • Computer Hardware Components")
