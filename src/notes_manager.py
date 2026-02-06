@@ -51,8 +51,10 @@ class NotesManager:
         Returns:
             The created note as a dictionary.
         """
+        # Generate ID by finding the maximum existing ID and adding 1
+        max_id = max((note['id'] for note in self.notes), default=0)
         note = {
-            'id': len(self.notes) + 1,
+            'id': max_id + 1,
             'title': title,
             'content': content,
             'tags': tags or [],

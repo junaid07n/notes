@@ -152,3 +152,25 @@ def test_corrupt_notes_file(temp_notes_file):
     
     manager = NotesManager(temp_notes_file)
     assert manager.get_all_notes() == []
+
+
+def test_id_generation_after_deletion(notes_manager):
+    """Test that ID generation works correctly after notes are deleted."""
+    # Create notes with IDs 1, 2, 3
+    note1 = notes_manager.create_note("Note 1", "Content 1")
+    note2 = notes_manager.create_note("Note 2", "Content 2")
+    note3 = notes_manager.create_note("Note 3", "Content 3")
+    
+    assert note1['id'] == 1
+    assert note2['id'] == 2
+    assert note3['id'] == 3
+    
+    # Delete note 2
+    notes_manager.delete_note(2)
+    
+    # Create a new note - it should get ID 4, not 3
+    note4 = notes_manager.create_note("Note 4", "Content 4")
+    assert note4['id'] == 4
+    
+    # Verify note 3 still exists
+    assert notes_manager.get_note_by_id(3) is not None
